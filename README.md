@@ -5,7 +5,8 @@ Final Project Update:
 
     Week 11 (Nov 24, 2025)
     Working on sending image from p5.js to dropbox
-
+![image](/README-image/week11-update-1.png)
+![image](/README-image/week11-update-2.png)
 
     Week 10 (Nov 17, 2025)
     Finalize concept
