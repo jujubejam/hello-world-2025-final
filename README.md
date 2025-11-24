@@ -5,6 +5,7 @@ Final Project Update:
 
     Week 11 (Nov 24, 2025)
     Working on sending image from p5.js to dropbox
+    Current state: Captures the video when button is pressed
 
 <img src="/README-image/week11-update-1.png" alt="Not Clicked" height="300"><img src="/README-image/week11-update-2.png" alt="Not Clicked" height="300">
 
