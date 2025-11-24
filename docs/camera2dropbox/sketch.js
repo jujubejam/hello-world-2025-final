@@ -17,13 +17,21 @@ function setup() {
   createCanvas(393, 852);
   // Use the createCapture() function to access the device's
   // camera and start capturing video.
-  options = { video: { facingMode: { exact: "environment" } } };
-  capture = createCapture(options)
-  // Make the capture frame half of the canvas.
-  capture.size(cameraWidth, cameraHeight);
-  // Use capture.hide() to remove the p5.Element object made
-  // using createCapture(). The video will instead be rendered as
-  // an image in draw().
+
+  createCanvas(displayWidth, displayHeight);
+  var constraints = {
+    audio: false,
+    video: {
+      facingMode: {
+        exact: "environment"
+      }
+    }    
+    // video: {
+    //   facingMode: "user"
+    // } 
+  };
+  capture = createCapture(constraints);
+  
   capture.hide();
   
   let cameraButton = createButton("click");
