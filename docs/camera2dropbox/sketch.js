@@ -7,8 +7,6 @@ let screenWidth = 393;
 let screenHeight = 852;
 
 let cameraButton;
-let cameraButtonX;
-let cameraButtonY;
 
 let flipButton;
 let cameraBack = false;
@@ -24,6 +22,7 @@ function setup() {
   createCanvas(displayWidth, displayHeight);
   if (cameraBack === false) {
     var constraints = {  
+      audio: false,
       video: {
         facingMode: "user"
       } 
@@ -54,12 +53,6 @@ function setup() {
   cameraButton.style('cursor', 'pointer');
   cameraButton.position(screenWidth*1/2-cameraButton.width*1/2, (screenHeight+cameraHeight)*1/2+50);
   cameraButton.style('border-radius', '5px');
-  
-  cameraButtonX = screenWidth*1/2-cameraButton.width*1/2;
-  cameraButtonY = (screenHeight+cameraHeight)*1/2+50;
-  cameraButtonWidth = 150;
-  cameraButtonHeight = 50;
-
   cameraButton.mousePressed(() => {
     if (appState === "DEFAULT") {
       screenshot = capture.get();
