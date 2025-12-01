@@ -1,386 +1,345 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Camera, FlipHorizontal, X, Save, Send, ArrowLeft, ImageIcon } from 'lucide-react';
+// GLOBAL VARIABLES
+let capture;
+let screenshot;
+let appState = "DEFAULT";
+let cameraBack = false;
 
-const LibraryConnector = () => {
-  const [appState, setAppState] = useState('DEFAULT');
-  const [facingMode, setFacingMode] = useState('user');
-  const [capturedImage, setCapturedImage] = useState(null);
-  const [nickname, setNickname] = useState('');
-  const [location, setLocation] = useState('');
-  const [description, setDescription] = useState('');
-  const [removeBg, setRemoveBg] = useState(false);
-  const [gallery, setGallery] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [currentPrompt] = useState("butterflies");
+let screenWidth = 393;
+let screenHeight = 852;
+
+// UI ELEMENTS
+let captureButton;
+let flipButton;
+let skipButton;
+let cancelButton;
+let saveButton;
+let backButton;
+let submitButton;
+
+// INFO STATE INPUTS
+let nicknameInput;
+let locationRadio;
+let descriptionInput;
+
+// PROMPT
+let currentPrompt = "butterflies";
+
+// GALLERY DATA (mock - Firebase would replace this)
+let galleryPhotos = [];
+
+function setup() {
+  createCanvas(screenWidth, screenHeight);
   
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-
-  useEffect(() => {
-    if (appState === 'DEFAULT') {
-      startCamera();
-    }
-    return () => {
-      stopCamera();
-    };
-  }, [facingMode, appState]);
-
-  useEffect(() => {
-    loadGallery();
-  }, []);
-
-  const startCamera = async () => {
-    try {
-      const constraints = {
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-      }
-    } catch (err) {
-      console.error("Camera error:", err);
-      alert("Unable to access camera. Please check permissions.");
+  // START CAMERA
+  let constraints = {
+    audio: false,
+    video: {
+      facingMode: cameraBack ? { exact: "environment" } : "user"
     }
   };
+  capture = createCapture(constraints);
+  capture.hide();
+  
+  createUIElements();
+}
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-  };
+function draw() {
+  background(255);
+  
+  if (appState === "DEFAULT") {
+    drawDefaultState();
+  } else if (appState === "SCREENSHOT") {
+    drawScreenshotState();
+  } else if (appState === "INFO") {
+    drawInfoState();
+  } else if (appState === "ARCHIVE") {
+    drawArchiveState();
+  }
+  
+  updateUIVisibility();
+}
 
-  const flipCamera = () => {
-    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-  };
+// ==========================================
+// STATE DRAWING FUNCTIONS
+// ==========================================
 
-  const capturePhoto = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (video && canvas) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      const imageData = canvas.toDataURL('image/jpeg', 0.9);
-      setCapturedImage(imageData);
-      setAppState('SCREENSHOT');
-      stopCamera();
-    }
-  };
+function drawDefaultState() {
+  // Draw prompt at top
+  fill(0);
+  textSize(20);
+  textAlign(CENTER);
+  text("This week's prompt: " + currentPrompt, screenWidth / 2, 40);
+  
+  // Draw camera feed
+  let videoWidth = capture.width;
+  let videoHeight = capture.height;
+  let aspectRatio = videoWidth / videoHeight;
+  let displayHeight = screenHeight * 0.6;
+  let displayWidth = displayHeight * aspectRatio;
+  let x = (screenWidth - displayWidth) / 2;
+  let y = 80;
+  
+  image(capture, x, y, displayWidth, displayHeight);
+}
 
-  const cancelScreenshot = () => {
-    setCapturedImage(null);
-    setAppState('DEFAULT');
-  };
+function drawScreenshotState() {
+  if (screenshot) {
+    // Draw captured image
+    let imgWidth = screenshot.width;
+    let imgHeight = screenshot.height;
+    let aspectRatio = imgWidth / imgHeight;
+    let displayHeight = screenHeight * 0.6;
+    let displayWidth = displayHeight * aspectRatio;
+    let x = (screenWidth - displayWidth) / 2;
+    let y = 80;
+    
+    image(screenshot, x, y, displayWidth, displayHeight);
+  }
+}
 
-  const saveScreenshot = () => {
-    setAppState('INFO');
-  };
+function drawInfoState() {
+  // Draw preview of captured image
+  if (screenshot) {
+    let displaySize = 200;
+    let x = (screenWidth - displaySize) / 2;
+    image(screenshot, x, 20, displaySize, displaySize);
+  }
+  
+  // Labels for inputs (inputs are created as HTML elements)
+  fill(0);
+  textSize(14);
+  textAlign(LEFT);
+  text("Nickname:", 20, 250);
+  text("Location:", 20, 320);
+  text("Description:", 20, 420);
+}
 
-  const uploadToImgBB = async () => {
-    if (!capturedImage || !nickname || !location) {
-      alert("Please fill in all required fields (nickname and location)");
-      return;
-    }
-
-    try {
-      const base64Data = capturedImage.split(',')[1];
-      const formData = new FormData();
-      formData.append('image', base64Data);
-      formData.append('name', `${nickname}_${Date.now()}`);
-
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=fab8ebe76506446661ca5a19fa7afb4e`, {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await response.json();
+function drawArchiveState() {
+  // Title
+  fill(0);
+  textSize(20);
+  textAlign(CENTER);
+  text("Gallery", screenWidth / 2, 40);
+  
+  // Draw gallery grid (3 columns)
+  if (galleryPhotos.length === 0) {
+    textSize(14);
+    text("No photos yet", screenWidth / 2, screenHeight / 2);
+  } else {
+    let cols = 3;
+    let cellSize = screenWidth / cols;
+    let startY = 80;
+    
+    for (let i = 0; i < galleryPhotos.length; i++) {
+      let col = i % cols;
+      let row = floor(i / cols);
+      let x = col * cellSize;
+      let y = startY + row * cellSize;
       
-      if (data.success) {
-        const imageInfo = {
-          url: data.data.url,
-          deleteUrl: data.data.delete_url,
-          nickname: nickname,
-          location: location,
-          description: description,
-          prompt: currentPrompt,
-          timestamp: Date.now()
-        };
-        
-        const existingGallery = JSON.parse(localStorage.getItem('libraryGallery') || '[]');
-        existingGallery.unshift(imageInfo);
-        localStorage.setItem('libraryGallery', JSON.stringify(existingGallery));
-        
-        alert("Photo uploaded successfully!");
-        resetForm();
-        setAppState('ARCHIVE');
-        loadGallery();
-      } else {
-        throw new Error(data.error?.message || 'Upload failed');
+      // Draw placeholder (in real version, would draw actual images)
+      fill(200);
+      rect(x, y, cellSize - 2, cellSize - 2);
+      
+      // Draw thumbnail if exists
+      if (galleryPhotos[i].img) {
+        image(galleryPhotos[i].img, x, y, cellSize - 2, cellSize - 2);
       }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Failed to upload photo. Please try again.");
+    }
+  }
+}
+
+// ==========================================
+// UI CREATION
+// ==========================================
+
+function createUIElements() {
+  // CAPTURE BUTTON
+  captureButton = createButton("Capture");
+  captureButton.position(screenWidth / 2 - 75, screenHeight - 200);
+  captureButton.size(150, 50);
+  captureButton.mousePressed(handleCapture);
+  
+  // FLIP BUTTON
+  flipButton = createButton("Flip");
+  flipButton.position(screenWidth / 2 - 75, screenHeight - 140);
+  flipButton.size(150, 50);
+  flipButton.mousePressed(handleFlip);
+  
+  // SKIP BUTTON (goes to archive)
+  skipButton = createButton("Skip to Archive");
+  skipButton.position(screenWidth / 2 - 75, screenHeight - 80);
+  skipButton.size(150, 50);
+  skipButton.mousePressed(() => {
+    appState = "ARCHIVE";
+  });
+  
+  // CANCEL BUTTON
+  cancelButton = createButton("Cancel");
+  cancelButton.position(50, screenHeight - 100);
+  cancelButton.size(100, 50);
+  cancelButton.mousePressed(() => {
+    appState = "DEFAULT";
+  });
+  
+  // SAVE BUTTON
+  saveButton = createButton("Save");
+  saveButton.position(screenWidth - 150, screenHeight - 100);
+  saveButton.size(100, 50);
+  saveButton.mousePressed(() => {
+    appState = "INFO";
+  });
+  
+  // BACK BUTTON (in archive)
+  backButton = createButton("Back");
+  backButton.position(20, 60);
+  backButton.size(100, 40);
+  backButton.mousePressed(() => {
+    appState = "DEFAULT";
+  });
+  
+  // INFO STATE INPUTS
+  nicknameInput = createInput();
+  nicknameInput.position(20, 260);
+  nicknameInput.size(screenWidth - 40, 30);
+  nicknameInput.attribute('placeholder', 'Who are you?');
+  
+  // Location radio buttons
+  locationRadio = createRadio();
+  locationRadio.option('Library Main', 'main');
+  locationRadio.option('Library West', 'west');
+  locationRadio.position(20, 340);
+  
+  descriptionInput = createInput();
+  descriptionInput.position(20, 440);
+  descriptionInput.size(screenWidth - 40, 80);
+  descriptionInput.attribute('placeholder', 'Where did you find it?');
+  
+  // SUBMIT BUTTON
+  submitButton = createButton("Submit");
+  submitButton.position(screenWidth / 2 - 75, screenHeight - 100);
+  submitButton.size(150, 50);
+  submitButton.mousePressed(handleSubmit);
+}
+
+// ==========================================
+// UI VISIBILITY MANAGEMENT
+// ==========================================
+
+function updateUIVisibility() {
+  // DEFAULT STATE
+  captureButton.style('display', appState === "DEFAULT" ? 'block' : 'none');
+  flipButton.style('display', appState === "DEFAULT" ? 'block' : 'none');
+  skipButton.style('display', appState === "DEFAULT" ? 'block' : 'none');
+  
+  // SCREENSHOT STATE
+  cancelButton.style('display', appState === "SCREENSHOT" ? 'block' : 'none');
+  saveButton.style('display', appState === "SCREENSHOT" ? 'block' : 'none');
+  
+  // INFO STATE
+  nicknameInput.style('display', appState === "INFO" ? 'block' : 'none');
+  locationRadio.style('display', appState === "INFO" ? 'block' : 'none');
+  descriptionInput.style('display', appState === "INFO" ? 'block' : 'none');
+  submitButton.style('display', appState === "INFO" ? 'block' : 'none');
+  
+  // ARCHIVE STATE
+  backButton.style('display', appState === "ARCHIVE" ? 'block' : 'none');
+}
+
+// ==========================================
+// EVENT HANDLERS
+// ==========================================
+
+function handleCapture() {
+  screenshot = capture.get();
+  appState = "SCREENSHOT";
+  console.log("Photo captured");
+}
+
+function handleFlip() {
+  cameraBack = !cameraBack;
+  
+  // Remove old capture
+  capture.remove();
+  
+  // Create new capture with flipped camera
+  let constraints = {
+    audio: false,
+    video: {
+      facingMode: cameraBack ? { exact: "environment" } : "user"
     }
   };
+  capture = createCapture(constraints);
+  capture.hide();
+  
+  console.log("Camera flipped");
+}
 
-  const loadGallery = () => {
-    const stored = localStorage.getItem('libraryGallery');
-    if (stored) {
-      setGallery(JSON.parse(stored));
+function handleSubmit() {
+  // Get form data
+  let nickname = nicknameInput.value();
+  let location = locationRadio.value();
+  let description = descriptionInput.value();
+  
+  if (!nickname || !location) {
+    alert("Please fill in nickname and location");
+    return;
+  }
+  
+  // Create photo object
+  let photoData = {
+    img: screenshot,
+    nickname: nickname,
+    location: location,
+    description: description,
+    prompt: currentPrompt,
+    timestamp: Date.now()
+  };
+  
+  // Add to gallery (in real version, would upload to Firebase)
+  galleryPhotos.push(photoData);
+  
+  console.log("Photo submitted:", photoData);
+  
+  // Clear form
+  nicknameInput.value('');
+  locationRadio.selected('');
+  descriptionInput.value('');
+  
+  // Go to archive
+  appState = "ARCHIVE";
+}
+
+// ==========================================
+// MOUSE CLICK FOR GALLERY ITEMS
+// ==========================================
+
+function mousePressed() {
+  if (appState === "ARCHIVE" && galleryPhotos.length > 0) {
+    let cols = 3;
+    let cellSize = screenWidth / cols;
+    let startY = 80;
+    
+    for (let i = 0; i < galleryPhotos.length; i++) {
+      let col = i % cols;
+      let row = floor(i / cols);
+      let x = col * cellSize;
+      let y = startY + row * cellSize;
+      
+      // Check if click is within this cell
+      if (mouseX > x && mouseX < x + cellSize && 
+          mouseY > y && mouseY < y + cellSize) {
+        showPhotoModal(galleryPhotos[i]);
+        break;
+      }
     }
-  };
+  }
+}
 
-  const resetForm = () => {
-    setCapturedImage(null);
-    setNickname('');
-    setLocation('');
-    setDescription('');
-    setRemoveBg(false);
-  };
-
-  const goToArchive = () => {
-    setAppState('ARCHIVE');
-    stopCamera();
-  };
-
-  const backToDefault = () => {
-    resetForm();
-    setAppState('DEFAULT');
-  };
-
-  return (
-    <div className="w-full h-screen bg-gray-900 overflow-hidden flex flex-col">
-      {/* Header with Prompt */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-6 text-center">
-        <h2 className="text-xl font-bold">This week's prompt:</h2>
-        <p className="text-2xl font-bold mt-1">{currentPrompt}</p>
-      </div>
-
-      {/* DEFAULT STATE */}
-      {appState === 'DEFAULT' && (
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 relative bg-black">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-          
-          <div className="bg-gray-800 p-6 flex justify-around items-center">
-            <button
-              onClick={goToArchive}
-              className="flex flex-col items-center text-white hover:text-pink-400 transition"
-            >
-              <ImageIcon size={32} />
-              <span className="text-sm mt-1">Archive</span>
-            </button>
-            
-            <button
-              onClick={capturePhoto}
-              className="w-20 h-20 rounded-full bg-white border-4 border-pink-500 hover:bg-pink-100 transition transform active:scale-95"
-            >
-              <Camera className="mx-auto text-pink-500" size={32} />
-            </button>
-            
-            <button
-              onClick={flipCamera}
-              className="flex flex-col items-center text-white hover:text-blue-400 transition"
-            >
-              <FlipHorizontal size={32} />
-              <span className="text-sm mt-1">Flip</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* SCREENSHOT STATE */}
-      {appState === 'SCREENSHOT' && (
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 bg-black flex items-center justify-center p-4">
-            <img src={capturedImage} alt="Captured" className="max-w-full max-h-full object-contain" />
-          </div>
-          
-          <div className="bg-gray-800 p-6 flex justify-around">
-            <button
-              onClick={cancelScreenshot}
-              className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-            >
-              <X size={20} />
-              Cancel
-            </button>
-            
-            <button
-              onClick={saveScreenshot}
-              className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-            >
-              <Save size={20} />
-              Save
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* INFO STATE */}
-      {appState === 'INFO' && (
-        <div className="flex-1 overflow-y-auto bg-gray-800 p-6">
-          <div className="max-w-2xl mx-auto space-y-4">
-            <div className="bg-black rounded-lg p-4 mb-4">
-              <img src={capturedImage} alt="Preview" className="w-full rounded" />
-            </div>
-
-            <div>
-              <label className="block text-white font-semibold mb-2">Nickname *</label>
-              <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="Who are you?"
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-pink-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-white font-semibold mb-2">Location *</label>
-              <div className="space-y-2">
-                <label className="flex items-center text-white cursor-pointer">
-                  <input
-                    type="radio"
-                    name="location"
-                    value="Library Main"
-                    checked={location === 'Library Main'}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="mr-3 w-5 h-5"
-                  />
-                  Library Main
-                </label>
-                <label className="flex items-center text-white cursor-pointer">
-                  <input
-                    type="radio"
-                    name="location"
-                    value="Library West"
-                    checked={location === 'Library West'}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="mr-3 w-5 h-5"
-                  />
-                  Library West
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-white font-semibold mb-2">Where did you find it?</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Title and page of the book, location, who told you..."
-                rows={4}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-pink-500 focus:outline-none resize-none"
-              />
-            </div>
-
-            <button
-              onClick={uploadToImgBB}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition font-semibold text-lg"
-            >
-              <Send size={24} />
-              Submit
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ARCHIVE STATE */}
-      {appState === 'ARCHIVE' && (
-        <div className="flex-1 overflow-y-auto bg-gray-800">
-          <div className="p-6">
-            <button
-              onClick={backToDefault}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition mb-4"
-            >
-              <ArrowLeft size={20} />
-              Back to Camera
-            </button>
-
-            <h2 className="text-2xl font-bold text-white mb-4">Gallery</h2>
-            
-            {gallery.length === 0 ? (
-              <p className="text-gray-400 text-center py-12">No photos yet. Start capturing!</p>
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {gallery.map((item, index) => (
-                  <div
-                    key={index}
-                    onClick={() => setSelectedImage(item)}
-                    className="aspect-square bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition"
-                  >
-                    <img src={item.url} alt={item.nickname} className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Image Detail Modal */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div
-            className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4">
-              <img src={selectedImage.url} alt={selectedImage.nickname} className="w-full rounded-lg mb-4" />
-              
-              <div className="space-y-3 text-white">
-                <div>
-                  <span className="font-semibold text-pink-400">Prompt:</span>
-                  <span className="ml-2">{selectedImage.prompt}</span>
-                </div>
-                <div>
-                  <span className="font-semibold text-pink-400">By:</span>
-                  <span className="ml-2">{selectedImage.nickname}</span>
-                </div>
-                <div>
-                  <span className="font-semibold text-pink-400">Location:</span>
-                  <span className="ml-2">{selectedImage.location}</span>
-                </div>
-                {selectedImage.description && (
-                  <div>
-                    <span className="font-semibold text-pink-400">Description:</span>
-                    <p className="mt-1 text-gray-300">{selectedImage.description}</p>
-                  </div>
-                )}
-              </div>
-              
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="mt-4 w-full px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default LibraryConnector;
+function showPhotoModal(photo) {
+  // Show alert with photo info (in real version, would be a styled modal)
+  let info = "Prompt: " + photo.prompt + "\n" +
+             "By: " + photo.nickname + "\n" +
+             "Location: " + photo.location + "\n" +
+             "Description: " + photo.description;
+  alert(info);
+}
