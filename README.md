@@ -2,23 +2,26 @@
 SVA MFA IxD Hello World Final Project
 
 Final Project Update:
+    Week 3 (Dec 3, 2025)
+    p5.js prototype: https://jujubejam.github.io/hello-world-2025-final/library-connector/
+    Trying to find a way to connect it to a backend cloud that allows my app to store the images.
 
-    Week 11 (Nov 24, 2025)
+    Week 2 (Nov 24, 2025)
     Working on sending image from p5.js to dropbox
     Current state: Captures the video when button is pressed
 
 <img src="/README-image/week11-update-1.png" alt="Not Clicked" height="300"><img src="/README-image/week11-update-2.png" alt="Not Clicked" height="300">
 
-    Week 10 (Nov 17, 2025)
+    Week 1 (Nov 17, 2025)
     Finalize concept
 
 
-    Week 9 (Nov 10, 2025)
+    Week 0 (Nov 10, 2025)
     State changes from DEFAULT to DRAW when user press ENTER
     DRAW state is still buggy
 
     
-    Week 8 (Nov 3, 2025)
+    Week -1 (Nov 3, 2025)
     Ideation: Interactive Installation
     * Inputs: Camera or Keyboard
     * Outputs: Physical Movement or Screen
