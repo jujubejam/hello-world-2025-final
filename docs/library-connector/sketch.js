@@ -4,7 +4,7 @@ let screenshot;
 let appState = "DEFAULT";
 let cameraBack = true; //false = front, true = back
 
-// SCREEN DIMENSIONS (for mobile device) - will change to responsive later
+// SCREEN DIMENSIONS (for mobile device) - FIX: change to responsive later
 let screenWidth = 393;
 let screenHeight = 852;
 
@@ -16,7 +16,7 @@ let skipButton;
 // SCREENSHOT STATE BUTTONS
 let cancelButton;
 let saveButton;
-// INFO STATE BUTTONS - I need to add backButton here too
+// INFO STATE BUTTONS - FIX: add backButton
 let submitButton;
 // ARCHIVE STATE BUTTONS
 let backButton;
@@ -29,8 +29,8 @@ let descriptionInput;
 // PROMPT
 let currentPrompt = "butterflies";
 
-// GALLERY DATA (mock - Firebase would replace this)
-let galleryPhotos = [];
+// GALLERY DATA 
+let galleryPhotos = []; //FIX: In real version, would be fetched from Firebase or other database
 
 function setup() {
   createCanvas(screenWidth, screenHeight);
@@ -39,7 +39,7 @@ function setup() {
   let constraints = {
     audio: false,
     video: {
-      facingMode: cameraBack ? { exact: "environment" } : "user" //if cameraBack is true, use back camera("environment"), else front camera("user")
+      facingMode: cameraBack ? { exact: "environment" } : "user" //If cameraBack is true, use back camera("environment"), else front camera("user")
     }
   };
   capture = createCapture(constraints);
@@ -81,7 +81,7 @@ function drawDefaultState() {
   let aspectRatio = videoWidth / videoHeight;
   let displayHeight = screenHeight * 0.6;
   let displayWidth = displayHeight * aspectRatio;
-  let x = (screenWidth - displayWidth) / 2;
+  let x = (screenWidth - displayWidth) / 2; //If photo is smaller than screen, center it
   let y = 80;
   
   image(capture, x, y, displayWidth, displayHeight);
@@ -95,7 +95,7 @@ function drawScreenshotState() {
     let aspectRatio = imgWidth / imgHeight;
     let displayHeight = screenHeight * 0.6;
     let displayWidth = displayHeight * aspectRatio;
-    let x = (screenWidth - displayWidth) / 2;
+    let x = (screenWidth - displayWidth) / 2; 
     let y = 80;
     
     image(screenshot, x, y, displayWidth, displayHeight);
@@ -105,7 +105,7 @@ function drawScreenshotState() {
 function drawInfoState() {
   // Draw preview of captured image
   if (screenshot) {
-    let displaySize = 200;
+    let displaySize = 200; //FIX: adjust ratio
     let x = (screenWidth - displaySize) / 2;
     image(screenshot, x, 20, displaySize, displaySize);
   }
@@ -114,7 +114,7 @@ function drawInfoState() {
   fill(0);
   textSize(14);
   textAlign(LEFT);
-  text("Nickname:", 20, 250);
+  text("Nickname:", 20, 250); //FIX: adjust y positions to be responsive
   text("Location:", 20, 320);
   text("Description:", 20, 420);
 }
@@ -127,19 +127,19 @@ function drawArchiveState() {
   text("Gallery", screenWidth / 2, 40);
   
   // Draw gallery grid (3 columns)
-  if (galleryPhotos.length === 0) {
+  if (galleryPhotos.length === 0) { //If there is no photo in gallery
     textSize(14);
     text("No photos yet", screenWidth / 2, screenHeight / 2);
   } else {
-    let cols = 3;
+    let cols = 3; //number of columns
     let cellSize = screenWidth / cols;
-    let startY = 80;
+    let startY = 80; //FIX: adjust for responsiveness
     
     for (let i = 0; i < galleryPhotos.length; i++) {
-      let col = i % cols;
-      let row = floor(i / cols);
+      let col = i % cols; //remainder 나머지
+      let row = floor(i / cols); //round down 소수점 버림
       let x = col * cellSize;
-      let y = startY + row * cellSize;
+      let y = startY + row * cellSize; 
       
       // Draw placeholder (in real version, would draw actual images)
       fill(200);
