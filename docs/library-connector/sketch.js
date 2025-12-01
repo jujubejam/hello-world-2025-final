@@ -162,13 +162,13 @@ function createUIElements() {
   captureButton = createButton("Capture");
   captureButton.position(screenWidth / 2 - 75, screenHeight - 200);
   captureButton.size(150, 50);
-  captureButton.mousePressed(handleCapture);
+  captureButton.mousePressed(handleCapture); //when clicked, call handleCapture function
   
   // FLIP BUTTON
   flipButton = createButton("Flip");
   flipButton.position(screenWidth / 2 - 75, screenHeight - 140);
   flipButton.size(150, 50);
-  flipButton.mousePressed(handleFlip);
+  flipButton.mousePressed(handleFlip); //when clicked, call handleFlip function
   
   // SKIP BUTTON (goes to archive)
   skipButton = createButton("Skip to Archive");
@@ -210,8 +210,8 @@ function createUIElements() {
   
   // Location radio buttons
   locationRadio = createRadio();
-  locationRadio.option('Library Main', 'main');
-  locationRadio.option('Library West', 'west');
+  locationRadio.option('main', 'Library Main');
+  locationRadio.option('west', 'Library West');
   locationRadio.position(20, 340);
   
   descriptionInput = createInput();
@@ -257,7 +257,7 @@ function updateUIVisibility() {
 function handleCapture() {
   screenshot = capture.get();
   appState = "SCREENSHOT";
-  console.log("Photo captured");
+  // console.log("Photo captured");
 }
 
 function handleFlip() {
@@ -276,7 +276,7 @@ function handleFlip() {
   capture = createCapture(constraints);
   capture.hide();
   
-  console.log("Camera flipped");
+  // console.log("Camera flipped");
 }
 
 function handleSubmit() {
@@ -285,7 +285,7 @@ function handleSubmit() {
   let location = locationRadio.value();
   let description = descriptionInput.value();
   
-  if (!nickname || !location) {
+  if (!nickname || !location) { //If nickname or location is empty
     alert("Please fill in nickname and location");
     return;
   }
