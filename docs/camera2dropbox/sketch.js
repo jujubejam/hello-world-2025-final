@@ -13,6 +13,19 @@ let cameraBack = false;
 
 let appState = "DEFAULT";
 
+let imgbbApiKey = "fab8ebe76506446661ca5a19fa7afb4e";
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const FormData = require('form-data');
+const fetch = require('node-fetch');
+require('dotenv').config();
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+
+const app = express();
+const upload = multer();
+
 function setup() {
   describe('Video capture from the device webcam.');
   createCanvas(393, 852);
@@ -41,7 +54,7 @@ function setup() {
   capture = createCapture(constraints);
   capture.hide();
   
-  cameraButton = createButton("click");
+  cameraButton = createButton("capture");
   cameraButton.style('width', '150px');
   cameraButton.style('height', '50px');
   cameraButton.style('background-color', 'pink');
