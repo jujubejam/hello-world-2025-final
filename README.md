@@ -2,6 +2,7 @@
 SVA MFA IxD Hello World Final Project
 
 Final Project Update:
+    
     Week 3 (Dec 3, 2025)
     p5.js prototype: https://jujubejam.github.io/hello-world-2025-final/library-connector/
     Trying to find a way to connect it to a backend cloud that allows my app to store the images.
