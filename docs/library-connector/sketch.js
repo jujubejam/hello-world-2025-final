@@ -2,19 +2,24 @@
 let capture;
 let screenshot;
 let appState = "DEFAULT";
-let cameraBack = false;
+let cameraBack = true; //false = front, true = back
 
+// SCREEN DIMENSIONS (for mobile device) - will change to responsive later
 let screenWidth = 393;
 let screenHeight = 852;
 
-// UI ELEMENTS
+// BUTTONS
+// DEFAULT STATE BUTTONS
 let captureButton;
 let flipButton;
 let skipButton;
+// SCREENSHOT STATE BUTTONS
 let cancelButton;
 let saveButton;
-let backButton;
+// INFO STATE BUTTONS - I need to add backButton here too
 let submitButton;
+// ARCHIVE STATE BUTTONS
+let backButton;
 
 // INFO STATE INPUTS
 let nicknameInput;
@@ -34,13 +39,13 @@ function setup() {
   let constraints = {
     audio: false,
     video: {
-      facingMode: cameraBack ? { exact: "environment" } : "user"
+      facingMode: cameraBack ? { exact: "environment" } : "user" //if cameraBack is true, use back camera("environment"), else front camera("user")
     }
   };
   capture = createCapture(constraints);
   capture.hide();
   
-  createUIElements();
+  createUIElements(); //create buttons and inputs
 }
 
 function draw() {
@@ -83,7 +88,7 @@ function drawDefaultState() {
 }
 
 function drawScreenshotState() {
-  if (screenshot) {
+  if (screenshot) { //If screenshot exists and has value, run the code inside
     // Draw captured image
     let imgWidth = screenshot.width;
     let imgHeight = screenshot.height;
