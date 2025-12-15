@@ -30,7 +30,7 @@ let locationRadio;
 let descriptionInput;
 
 // PROMPT
-let currentPrompt = "butterflies";
+let currentPrompt = "Goodbye Hello World!";
 
 // GALLERY DATA
 let galleryPhotos = [];
@@ -183,13 +183,12 @@ function drawScreenshotState() {
 
 function drawInfoState() {
   if (screenshot) {
-    // Preview image - 25% of screen height
-    let displaySize = min(screenHeight * 0.25, screenWidth * 0.5);
-    let x = (screenWidth - displaySize) / 2;
-    let y = screenHeight * 0.05;
-    image(screenshot, x, y, displaySize, displaySize);
+    let displayWidth = screenshot.width * 0.3;
+    let displayHeight = screenshot.height * 0.3;
+    let x = (screenWidth - displayWidth) / 2;
+    let y = screenHeight * 0.1;
+    image(screenshot, x, y, displayWidth, displayHeight);
   }
-  
   // Labels
   fill(0);
   let labelSize = constrain(screenHeight * 0.02, 12, 16);
@@ -354,7 +353,7 @@ function updateUIVisibility() {
   descriptionInput.style('display', appState === "INFO" ? 'block' : 'none');
   submitButton.style('display', appState === "INFO" ? 'block' : 'none');
   
-  backButton.style('display', appState === "ARCHIVE" ? 'block' : 'none');
+  backButton.style('display', appState === "INFO" || appState === "ARCHIVE" ? 'block' : 'none');
 }
 
 // ==========================================
@@ -581,9 +580,14 @@ function mousePressed() {
 }
 
 function showPhotoModal(photo) {
-  let info = "Prompt: " + photo.prompt + "\n" +
-             "By: " + photo.nickname + "\n" +
-             "Location: " + photo.location + "\n" +
-             "Description: " + photo.description;
-  alert(info);
+    document.getElementById('modalImg').src = photo.img.canvas.toDataURL();
+    document.getElementById('modalPrompt').querySelector('span').textContent = photo.prompt;
+    document.getElementById('modalNickname').querySelector('span').textContent = photo.nickname;
+    document.getElementById('modalLocation').querySelector('span').textContent = photo.location;
+    document.getElementById('modalDescription').querySelector('span').textContent = photo.description || 'N/A';
+    document.getElementById('photoModal').style.display = 'block';
+}
+
+function closePhotoModal() {
+    document.getElementById('photoModal').style.display = 'none';
 }
