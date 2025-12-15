@@ -20,12 +20,14 @@ A collaborative photo collection web app connecting SVA students across Library 
 - Camera preview with flip toggle
 - Capture button to take photo
 - Skip to gallery option
+
 <img src="/README-image/state01-default01.png" alt="Not Clicked" height="300"><img src="/README-image/state01-default02.png" alt="Not Clicked" height="300">
 
 ### 2. **SCREENSHOT State** (Preview)
 - Review captured photo
 - Cancel to retake
 - Save to proceed
+
 <img src="/README-image/state02-screenShot01.png" alt="Not Clicked" height="300">
 
 ### 3. **INFO State** (Submission Form)
@@ -33,18 +35,21 @@ A collaborative photo collection web app connecting SVA students across Library 
 - **Location:** Radio select (Library Main / Library West)
 - **Description:** "Where did you find it?" (book title, page number, who told you about it, etc.)
 - Submit button to upload
+
 <img src="/README-image/state03-info01.png" alt="Not Clicked" height="300"><img src="/README-image/state03-info02.png" alt="Not Clicked" height="300"><img src="/README-image/state03-info03.png" alt="Not Clicked" height="300">
 
 ### 4. **SAVE Process** (Background)
 - Upload image to ImgBB
 - Save metadata to Airtable
 - Image URL linked to submission details
+
 <img src="/README-image/state03-info04.png" alt="Not Clicked" height="300">
 
 ### 5. **ARCHIVE State** (Gallery)
 - View all submissions in 3-column grid
 - Click any photo for full details
 - Back button to take more photos
+
 <img src="/README-image/state04-archive01.png" alt="Not Clicked" height="300"><img src="/README-image/state04-archive02.png" alt="Not Clicked" height="300">
 
 ---
