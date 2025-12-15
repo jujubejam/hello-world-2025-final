@@ -9,7 +9,7 @@ let screenHeight = 852;
 
 // API KEYS
 let imgbbApiKey = "fab8ebe76506446661ca5a19fa7afb4e";
-let airtableApiKey = "pat2VLjEVhYMBMx9O.5b5eaee8c41e26bcdf8fb13da5c8ccbe6b9c18c925cc51833dd4b0ca4efd2cc0";
+let airtableApiKey = "pat2VLjEVhYMBMx9O.c1ab0be32f15929633fa153abfcec9684832c4cad06b2c5a115f4a79b906ea39";
 let airtableBaseId = "appDs8E7KZBmVmLY3";
 let airtableTableName = "Photos";
 
