@@ -9,7 +9,7 @@ A collaborative photo collection web app connecting SVA students across Library 
 
 **Library Connector** is an interactive web application that enables School of Visual Arts (SVA) students to capture and share photos based on weekly themed prompts. Students access the app via NFC tags placed in both library locations, creating a shared visual archive that bridges the two campus libraries.
 
-**Live Demo:** [https://jujubejam.github.io/hello-world-2025-final/camera2dropbox/](https://jujubejam.github.io/hello-world-2025-final/camera2dropbox/)
+**Live Demo:** [https://jujubejam.github.io/hello-world-2025-final/library-connector/](https://jujubejam.github.io/hello-world-2025-final/library-connector/)
 
 ---
 
