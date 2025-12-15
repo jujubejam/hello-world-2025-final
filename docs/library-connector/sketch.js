@@ -2,23 +2,24 @@
 let capture;
 let screenshot;
 let appState = "DEFAULT";
-let cameraBack = true; //false = front, true = back
+let cameraBack = true;
 
-// SCREEN DIMENSIONS (for mobile device) - FIX: change to responsive later
 let screenWidth = 393;
 let screenHeight = 852;
 
+// API KEYS
+let imgbbApiKey = "fab8ebe76506446661ca5a19fa7afb4e";
+let airtableApiKey = "pat2VLjEVhYMBMx9O.5b5eaee8c41e26bcdf8fb13da5c8ccbe6b9c18c925cc51833dd4b0ca4efd2cc0";
+let airtableBaseId = "appDs8E7KZBmVmLY3";
+let airtableTableName = "Photos";
+
 // BUTTONS
-// DEFAULT STATE BUTTONS
 let captureButton;
 let flipButton;
 let skipButton;
-// SCREENSHOT STATE BUTTONS
 let cancelButton;
 let saveButton;
-// INFO STATE BUTTONS - FIX: add backButton
 let submitButton;
-// ARCHIVE STATE BUTTONS
 let backButton;
 
 // INFO STATE INPUTS
@@ -29,8 +30,9 @@ let descriptionInput;
 // PROMPT
 let currentPrompt = "butterflies";
 
-// GALLERY DATA 
-let galleryPhotos = []; //FIX: In real version, would be fetched from Firebase or other database
+// GALLERY DATA
+let galleryPhotos = [];
+let isLoadingGallery = false;
 
 function setup() {
   createCanvas(screenWidth, screenHeight);
@@ -39,13 +41,16 @@ function setup() {
   let constraints = {
     audio: false,
     video: {
-      facingMode: cameraBack ? { exact: "environment" } : "user" //If cameraBack is true, use back camera("environment"), else front camera("user")
+      facingMode: cameraBack ? { exact: "environment" } : "user"
     }
   };
   capture = createCapture(constraints);
   capture.hide();
   
-  createUIElements(); //create buttons and inputs
+  createUIElements();
+  
+  // Load gallery from Airtable
+  loadGalleryFromAirtable();
 }
 
 function draw() {
@@ -69,33 +74,30 @@ function draw() {
 // ==========================================
 
 function drawDefaultState() {
-  // Draw prompt at top
   fill(0);
   textSize(20);
   textAlign(CENTER);
   text("This week's prompt: " + currentPrompt, screenWidth / 2, 40);
   
-  // Draw camera feed
   let videoWidth = capture.width;
   let videoHeight = capture.height;
   let aspectRatio = videoWidth / videoHeight;
   let displayHeight = screenHeight * 0.6;
   let displayWidth = displayHeight * aspectRatio;
-  let x = (screenWidth - displayWidth) / 2; //If photo is smaller than screen, center it
+  let x = (screenWidth - displayWidth) / 2;
   let y = 80;
   
   image(capture, x, y, displayWidth, displayHeight);
 }
 
 function drawScreenshotState() {
-  if (screenshot) { //If screenshot exists and has value, run the code inside
-    // Draw captured image
+  if (screenshot) {
     let imgWidth = screenshot.width;
     let imgHeight = screenshot.height;
     let aspectRatio = imgWidth / imgHeight;
     let displayHeight = screenHeight * 0.6;
     let displayWidth = displayHeight * aspectRatio;
-    let x = (screenWidth - displayWidth) / 2; 
+    let x = (screenWidth - displayWidth) / 2;
     let y = 80;
     
     image(screenshot, x, y, displayWidth, displayHeight);
@@ -103,49 +105,46 @@ function drawScreenshotState() {
 }
 
 function drawInfoState() {
-  // Draw preview of captured image
   if (screenshot) {
-    let displaySize = 200; //FIX: adjust ratio
+    let displaySize = 200;
     let x = (screenWidth - displaySize) / 2;
     image(screenshot, x, 20, displaySize, displaySize);
   }
   
-  // Labels for inputs (inputs are created as HTML elements)
   fill(0);
   textSize(14);
   textAlign(LEFT);
-  text("Nickname:", 20, 250); //FIX: adjust y positions to be responsive
+  text("Nickname:", 20, 250);
   text("Location:", 20, 320);
   text("Description:", 20, 420);
 }
 
 function drawArchiveState() {
-  // Title
   fill(0);
   textSize(20);
   textAlign(CENTER);
   text("Gallery", screenWidth / 2, 40);
   
-  // Draw gallery grid (3 columns)
-  if (galleryPhotos.length === 0) { //If there is no photo in gallery
+  if (isLoadingGallery) {
+    textSize(14);
+    text("Loading photos...", screenWidth / 2, screenHeight / 2);
+  } else if (galleryPhotos.length === 0) {
     textSize(14);
     text("No photos yet", screenWidth / 2, screenHeight / 2);
   } else {
-    let cols = 3; //number of columns
+    let cols = 3;
     let cellSize = screenWidth / cols;
-    let startY = 80; //FIX: adjust for responsiveness
+    let startY = 80;
     
     for (let i = 0; i < galleryPhotos.length; i++) {
-      let col = i % cols; //remainder 나머지
-      let row = floor(i / cols); //round down 소수점 버림
+      let col = i % cols;
+      let row = floor(i / cols);
       let x = col * cellSize;
-      let y = startY + row * cellSize; 
+      let y = startY + row * cellSize;
       
-      // Draw placeholder (in real version, would draw actual images)
       fill(200);
       rect(x, y, cellSize - 2, cellSize - 2);
       
-      // Draw thumbnail if exists
       if (galleryPhotos[i].img) {
         image(galleryPhotos[i].img, x, y, cellSize - 2, cellSize - 2);
       }
@@ -158,57 +157,49 @@ function drawArchiveState() {
 // ==========================================
 
 function createUIElements() {
-  // CAPTURE BUTTON
   captureButton = createButton("Capture");
   captureButton.position(screenWidth / 2 - 75, screenHeight - 200);
   captureButton.size(150, 50);
-  captureButton.mousePressed(handleCapture); //when clicked, call handleCapture function
+  captureButton.mousePressed(handleCapture);
   
-  // FLIP BUTTON
   flipButton = createButton("Flip");
   flipButton.position(screenWidth / 2 - 75, screenHeight - 140);
   flipButton.size(150, 50);
-  flipButton.mousePressed(handleFlip); //when clicked, call handleFlip function
+  flipButton.mousePressed(handleFlip);
   
-  // SKIP BUTTON (goes to archive)
   skipButton = createButton("Skip to Archive");
   skipButton.position(screenWidth / 2 - 75, screenHeight - 80);
   skipButton.size(150, 50);
-  skipButton.mousePressed(() => {
+  skipButton.mousePressed(function() {
     appState = "ARCHIVE";
   });
   
-  // CANCEL BUTTON
   cancelButton = createButton("Cancel");
   cancelButton.position(50, screenHeight - 100);
   cancelButton.size(100, 50);
-  cancelButton.mousePressed(() => {
+  cancelButton.mousePressed(function() {
     appState = "DEFAULT";
   });
   
-  // SAVE BUTTON
   saveButton = createButton("Save");
   saveButton.position(screenWidth - 150, screenHeight - 100);
   saveButton.size(100, 50);
-  saveButton.mousePressed(() => {
+  saveButton.mousePressed(function() {
     appState = "INFO";
   });
   
-  // BACK BUTTON (in archive)
   backButton = createButton("Back");
   backButton.position(20, 60);
   backButton.size(100, 40);
-  backButton.mousePressed(() => {
+  backButton.mousePressed(function() {
     appState = "DEFAULT";
   });
   
-  // INFO STATE INPUTS
   nicknameInput = createInput();
   nicknameInput.position(20, 260);
   nicknameInput.size(screenWidth - 40, 30);
   nicknameInput.attribute('placeholder', 'Who are you?');
   
-  // Location radio buttons
   locationRadio = createRadio();
   locationRadio.option('main', 'Library Main');
   locationRadio.option('west', 'Library West');
@@ -219,7 +210,6 @@ function createUIElements() {
   descriptionInput.size(screenWidth - 40, 80);
   descriptionInput.attribute('placeholder', 'Where did you find it?');
   
-  // SUBMIT BUTTON
   submitButton = createButton("Submit");
   submitButton.position(screenWidth / 2 - 75, screenHeight - 100);
   submitButton.size(150, 50);
@@ -231,22 +221,18 @@ function createUIElements() {
 // ==========================================
 
 function updateUIVisibility() {
-  // DEFAULT STATE
   captureButton.style('display', appState === "DEFAULT" ? 'block' : 'none');
   flipButton.style('display', appState === "DEFAULT" ? 'block' : 'none');
   skipButton.style('display', appState === "DEFAULT" ? 'block' : 'none');
   
-  // SCREENSHOT STATE
   cancelButton.style('display', appState === "SCREENSHOT" ? 'block' : 'none');
   saveButton.style('display', appState === "SCREENSHOT" ? 'block' : 'none');
   
-  // INFO STATE
   nicknameInput.style('display', appState === "INFO" ? 'block' : 'none');
   locationRadio.style('display', appState === "INFO" ? 'block' : 'none');
   descriptionInput.style('display', appState === "INFO" ? 'block' : 'none');
   submitButton.style('display', appState === "INFO" ? 'block' : 'none');
   
-  // ARCHIVE STATE
   backButton.style('display', appState === "ARCHIVE" ? 'block' : 'none');
 }
 
@@ -257,16 +243,12 @@ function updateUIVisibility() {
 function handleCapture() {
   screenshot = capture.get();
   appState = "SCREENSHOT";
-  // console.log("Photo captured");
 }
 
 function handleFlip() {
   cameraBack = !cameraBack;
-  
-  // Remove old capture
   capture.remove();
   
-  // Create new capture with flipped camera
   let constraints = {
     audio: false,
     video: {
@@ -275,43 +257,179 @@ function handleFlip() {
   };
   capture = createCapture(constraints);
   capture.hide();
-  
-  // console.log("Camera flipped");
 }
 
 function handleSubmit() {
-  // Get form data
   let nickname = nicknameInput.value();
   let location = locationRadio.value();
   let description = descriptionInput.value();
   
-  if (!nickname || !location) { //If nickname or location is empty
+  if (!nickname || !location) {
     alert("Please fill in nickname and location");
     return;
   }
   
-  // Create photo object
-  let photoData = {
-    img: screenshot,
-    nickname: nickname,
-    location: location,
-    description: description,
-    prompt: currentPrompt,
-    timestamp: Date.now()
-  };
+  // Show loading
+  submitButton.html("Uploading...");
+  submitButton.attribute('disabled', '');
   
-  // Add to gallery (in real version, would upload to Firebase)
-  galleryPhotos.push(photoData);
+  // Upload to ImgBB and Airtable
+  uploadPhoto(nickname, location, description);
+}
+
+// ==========================================
+// DATABASE FUNCTIONS
+// ==========================================
+
+function uploadPhoto(nickname, location, description) {
+  // Step 1: Convert image to base64
+  let canvas = screenshot.canvas;
+  let base64Data = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
   
-  console.log("Photo submitted:", photoData);
+  // Step 2: Upload to ImgBB
+  let formData = new FormData();
+  formData.append('image', base64Data);
   
-  // Clear form
-  nicknameInput.value('');
-  locationRadio.selected('');
-  descriptionInput.value('');
+  fetch('https://api.imgbb.com/1/upload?key=' + imgbbApiKey, {
+    method: 'POST',
+    body: formData
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.success) {
+      let imageUrl = data.data.url;
+      console.log("Image uploaded to ImgBB:", imageUrl);
+      
+      // Step 3: Save to Airtable
+      return saveToAirtable(imageUrl, nickname, location, description);
+    } else {
+      throw new Error("ImgBB upload failed");
+    }
+  })
+  .then(function() {
+    alert("Photo uploaded successfully!");
+    
+    // Clear form
+    nicknameInput.value('');
+    locationRadio.selected('');
+    descriptionInput.value('');
+    
+    // Reset button
+    submitButton.html("Submit");
+    submitButton.removeAttribute('disabled');
+    
+    // Reload gallery
+    loadGalleryFromAirtable();
+    
+    // Go to archive
+    appState = "ARCHIVE";
+  })
+  .catch(function(error) {
+    console.error("Upload error:", error);
+    alert("Failed to upload. Please try again.");
+    
+    // Reset button
+    submitButton.html("Submit");
+    submitButton.removeAttribute('disabled');
+  });
+}
+
+function saveToAirtable(imageUrl, nickname, location, description) {
+  let url = 'https://api.airtable.com/v0/' + airtableBaseId + '/' + airtableTableName;
   
-  // Go to archive
-  appState = "ARCHIVE";
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + airtableApiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      fields: {
+        imageUrl: imageUrl,
+        nickname: nickname,
+        location: location,
+        description: description,
+        prompt: currentPrompt,
+        timestamp: Date.now()
+      }
+    })
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.id) {
+      console.log("Data saved to Airtable:", data);
+    } else {
+      throw new Error("Airtable save failed");
+    }
+  });
+}
+
+function loadGalleryFromAirtable() {
+  isLoadingGallery = true;
+  galleryPhotos = [];
+  
+  let url = 'https://api.airtable.com/v0/' + airtableBaseId + '/' + airtableTableName + 
+            '?sort[0][field]=timestamp&sort[0][direction]=desc';
+  
+  fetch(url, {
+    headers: {
+      'Authorization': 'Bearer ' + airtableApiKey
+    }
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.records) {
+      console.log("Loaded " + data.records.length + " records from Airtable");
+      
+      // Load each image
+      let promises = [];
+      for (let i = 0; i < data.records.length; i++) {
+        let record = data.records[i];
+        let promise = loadImageAsync(record.fields.imageUrl, record.fields);
+        promises.push(promise);
+      }
+      
+      return Promise.all(promises);
+    } else {
+      throw new Error("No records found");
+    }
+  })
+  .then(function() {
+    console.log("All images loaded:", galleryPhotos.length);
+    isLoadingGallery = false;
+  })
+  .catch(function(error) {
+    console.error("Error loading gallery:", error);
+    isLoadingGallery = false;
+  });
+}
+
+function loadImageAsync(url, fields) {
+  return new Promise(function(resolve, reject) {
+    loadImage(url, 
+      function(img) {
+        galleryPhotos.push({
+          img: img,
+          nickname: fields.nickname,
+          location: fields.location,
+          description: fields.description || "",
+          prompt: fields.prompt,
+          timestamp: fields.timestamp
+        });
+        resolve();
+      },
+      function() {
+        console.error("Failed to load image:", url);
+        resolve(); // Don't reject, just skip this image
+      }
+    );
+  });
 }
 
 // ==========================================
@@ -330,7 +448,6 @@ function mousePressed() {
       let x = col * cellSize;
       let y = startY + row * cellSize;
       
-      // Check if click is within this cell
       if (mouseX > x && mouseX < x + cellSize && 
           mouseY > y && mouseY < y + cellSize) {
         showPhotoModal(galleryPhotos[i]);
@@ -341,7 +458,6 @@ function mousePressed() {
 }
 
 function showPhotoModal(photo) {
-  // Show alert with photo info (in real version, would be a styled modal)
   let info = "Prompt: " + photo.prompt + "\n" +
              "By: " + photo.nickname + "\n" +
              "Location: " + photo.location + "\n" +
