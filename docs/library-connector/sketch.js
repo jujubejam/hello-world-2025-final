@@ -4,8 +4,10 @@ let screenshot;
 let appState = "DEFAULT";
 let cameraBack = true;
 
-let screenWidth = 393;
-let screenHeight = 852;
+// RESPONSIVE DIMENSIONS
+let screenWidth;
+let screenHeight;
+let maxWidth = 500; // Maximum width for desktop
 
 // API KEYS
 let imgbbApiKey = "fab8ebe76506446661ca5a19fa7afb4e";
@@ -35,7 +37,11 @@ let galleryPhotos = [];
 let isLoadingGallery = false;
 
 function setup() {
-  createCanvas(screenWidth, screenHeight);
+  screenWidth = min(windowWidth, maxWidth);
+  screenHeight = windowHeight;
+  
+  let canvas = createCanvas(screenWidth, screenHeight);
+  canvas.parent("sketch-container");
   
   // START CAMERA
   let constraints = {
@@ -48,9 +54,56 @@ function setup() {
   capture.hide();
   
   createUIElements();
-  
-  // Load gallery from Airtable
   loadGalleryFromAirtable();
+}
+
+function windowResized() {
+  screenWidth = min(windowWidth, maxWidth);
+  screenHeight = windowHeight;
+  resizeCanvas(screenWidth, screenHeight);
+  
+  // Update button positions
+  captureButton.style('top', screenHeight * 0.75 + 'px');
+  captureButton.style('width', screenWidth * 0.38 + 'px');
+  captureButton.style('height', screenHeight * 0.06 + 'px');
+  
+  flipButton.style('top', screenHeight * 0.82 + 'px');
+  flipButton.style('width', screenWidth * 0.38 + 'px');
+  flipButton.style('height', screenHeight * 0.06 + 'px');
+  
+  skipButton.style('top', screenHeight * 0.89 + 'px');
+  skipButton.style('width', screenWidth * 0.38 + 'px');
+  skipButton.style('height', screenHeight * 0.06 + 'px');
+  
+  cancelButton.style('left', screenWidth * 0.1 + 'px');
+  cancelButton.style('top', screenHeight * 0.88 + 'px');
+  cancelButton.style('width', screenWidth * 0.25 + 'px');
+  cancelButton.style('height', screenHeight * 0.06 + 'px');
+  
+  saveButton.style('right', screenWidth * 0.1 + 'px');
+  saveButton.style('top', screenHeight * 0.88 + 'px');
+  saveButton.style('width', screenWidth * 0.25 + 'px');
+  saveButton.style('height', screenHeight * 0.06 + 'px');
+  
+  backButton.style('left', screenWidth * 0.05 + 'px');
+  backButton.style('top', screenHeight * 0.02 + 'px');
+  backButton.style('width', screenWidth * 0.25 + 'px');
+  backButton.style('height', screenHeight * 0.05 + 'px');
+  
+  submitButton.style('top', screenHeight * 0.88 + 'px');
+  submitButton.style('width', screenWidth * 0.38 + 'px');
+  submitButton.style('height', screenHeight * 0.06 + 'px');
+  
+  nicknameInput.style('left', screenWidth * 0.05 + 'px');
+  nicknameInput.style('top', screenHeight * 0.37 + 'px');
+  nicknameInput.style('width', screenWidth * 0.9 + 'px');
+  
+  locationRadio.style('left', screenWidth * 0.05 + 'px');
+  locationRadio.style('top', screenHeight * 0.47 + 'px');
+  
+  descriptionInput.style('left', screenWidth * 0.05 + 'px');
+  descriptionInput.style('top', screenHeight * 0.59 + 'px');
+  descriptionInput.style('width', screenWidth * 0.9 + 'px');
 }
 
 function draw() {
@@ -75,66 +128,98 @@ function draw() {
 
 function drawDefaultState() {
   fill(0);
-  textSize(20);
-  textAlign(CENTER);
-  text("This week's prompt: " + currentPrompt, screenWidth / 2, 40);
   
+  // Responsive text size
+  let titleSize = constrain(screenHeight * 0.025, 16, 24);
+  textSize(titleSize);
+  textAlign(CENTER);
+  text("This week's prompt: " + currentPrompt, screenWidth / 2, screenHeight * 0.05);
+  
+  // Camera feed - 60% of screen height
   let videoWidth = capture.width;
   let videoHeight = capture.height;
-  let aspectRatio = videoWidth / videoHeight;
-  let displayHeight = screenHeight * 0.6;
-  let displayWidth = displayHeight * aspectRatio;
-  let x = (screenWidth - displayWidth) / 2;
-  let y = 80;
   
-  image(capture, x, y, displayWidth, displayHeight);
+  if (videoWidth > 0 && videoHeight > 0) {
+    let aspectRatio = videoWidth / videoHeight;
+    let displayHeight = screenHeight * 0.55;
+    let displayWidth = displayHeight * aspectRatio;
+    
+    // If video is too wide, constrain by width instead
+    if (displayWidth > screenWidth * 0.95) {
+      displayWidth = screenWidth * 0.95;
+      displayHeight = displayWidth / aspectRatio;
+    }
+    
+    let x = (screenWidth - displayWidth) / 2;
+    let y = screenHeight * 0.1;
+    
+    image(capture, x, y, displayWidth, displayHeight);
+  }
 }
 
 function drawScreenshotState() {
   if (screenshot) {
     let imgWidth = screenshot.width;
     let imgHeight = screenshot.height;
-    let aspectRatio = imgWidth / imgHeight;
-    let displayHeight = screenHeight * 0.6;
-    let displayWidth = displayHeight * aspectRatio;
-    let x = (screenWidth - displayWidth) / 2;
-    let y = 80;
     
-    image(screenshot, x, y, displayWidth, displayHeight);
+    if (imgWidth > 0 && imgHeight > 0) {
+      let aspectRatio = imgWidth / imgHeight;
+      let displayHeight = screenHeight * 0.55;
+      let displayWidth = displayHeight * aspectRatio;
+      
+      // Constrain by width if needed
+      if (displayWidth > screenWidth * 0.95) {
+        displayWidth = screenWidth * 0.95;
+        displayHeight = displayWidth / aspectRatio;
+      }
+      
+      let x = (screenWidth - displayWidth) / 2;
+      let y = screenHeight * 0.1;
+      
+      image(screenshot, x, y, displayWidth, displayHeight);
+    }
   }
 }
 
 function drawInfoState() {
   if (screenshot) {
-    let displaySize = 200;
+    // Preview image - 25% of screen height
+    let displaySize = min(screenHeight * 0.25, screenWidth * 0.5);
     let x = (screenWidth - displaySize) / 2;
-    image(screenshot, x, 20, displaySize, displaySize);
+    let y = screenHeight * 0.05;
+    image(screenshot, x, y, displaySize, displaySize);
   }
   
+  // Labels
   fill(0);
-  textSize(14);
+  let labelSize = constrain(screenHeight * 0.02, 12, 16);
+  textSize(labelSize);
   textAlign(LEFT);
-  text("Nickname:", 20, 250);
-  text("Location:", 20, 320);
-  text("Description:", 20, 420);
+  
+  text("Nickname:", screenWidth * 0.05, screenHeight * 0.35);
+  text("Location:", screenWidth * 0.05, screenHeight * 0.45);
+  text("Description:", screenWidth * 0.05, screenHeight * 0.57);
 }
 
 function drawArchiveState() {
   fill(0);
-  textSize(20);
+  let titleSize = constrain(screenHeight * 0.025, 16, 24);
+  textSize(titleSize);
   textAlign(CENTER);
-  text("Gallery", screenWidth / 2, 40);
+  text("Gallery", screenWidth / 2, screenHeight * 0.08);
   
   if (isLoadingGallery) {
-    textSize(14);
+    let loadingSize = constrain(screenHeight * 0.02, 12, 16);
+    textSize(loadingSize);
     text("Loading photos...", screenWidth / 2, screenHeight / 2);
   } else if (galleryPhotos.length === 0) {
-    textSize(14);
+    let emptySize = constrain(screenHeight * 0.02, 12, 16);
+    textSize(emptySize);
     text("No photos yet", screenWidth / 2, screenHeight / 2);
   } else {
     let cols = 3;
     let cellSize = screenWidth / cols;
-    let startY = 80;
+    let startY = screenHeight * 0.12;
     
     for (let i = 0; i < galleryPhotos.length; i++) {
       let col = i % cols;
@@ -153,67 +238,103 @@ function drawArchiveState() {
 }
 
 // ==========================================
-// UI CREATION
+// UI CREATION & POSITIONING
 // ==========================================
 
 function createUIElements() {
+  // CREATE BUTTONS
   captureButton = createButton("Capture");
-  captureButton.position(screenWidth / 2 - 75, screenHeight - 200);
-  captureButton.size(150, 50);
+  captureButton.parent("sketch-container");
+  captureButton.style('position', 'absolute');
+  captureButton.style('left', '50%');
+  captureButton.style('transform', 'translateX(-50%)');
+  captureButton.style('top', screenHeight * 0.75 + 'px');
+  captureButton.style('width', screenWidth * 0.38 + 'px');
+  captureButton.style('height', screenHeight * 0.06 + 'px');
   captureButton.mousePressed(handleCapture);
   
   flipButton = createButton("Flip");
-  flipButton.position(screenWidth / 2 - 75, screenHeight - 140);
-  flipButton.size(150, 50);
+  flipButton.parent("sketch-container");
+  flipButton.style('position', 'absolute');
+  flipButton.style('left', '50%');
+  flipButton.style('transform', 'translateX(-50%)');
+  flipButton.style('top', screenHeight * 0.82 + 'px');
+  flipButton.style('width', screenWidth * 0.38 + 'px');
+  flipButton.style('height', screenHeight * 0.06 + 'px');
   flipButton.mousePressed(handleFlip);
   
   skipButton = createButton("Skip to Archive");
-  skipButton.position(screenWidth / 2 - 75, screenHeight - 80);
-  skipButton.size(150, 50);
-  skipButton.mousePressed(function() {
-    appState = "ARCHIVE";
-  });
+  skipButton.parent("sketch-container");
+  skipButton.style('position', 'absolute');
+  skipButton.style('left', '50%');
+  skipButton.style('transform', 'translateX(-50%)');
+  skipButton.style('top', screenHeight * 0.89 + 'px');
+  skipButton.style('width', screenWidth * 0.38 + 'px');
+  skipButton.style('height', screenHeight * 0.06 + 'px');
+  skipButton.mousePressed(function() { appState = "ARCHIVE"; });
   
   cancelButton = createButton("Cancel");
-  cancelButton.position(50, screenHeight - 100);
-  cancelButton.size(100, 50);
-  cancelButton.mousePressed(function() {
-    appState = "DEFAULT";
-  });
+  cancelButton.parent("sketch-container");
+  cancelButton.style('position', 'absolute');
+  cancelButton.style('left', screenWidth * 0.1 + 'px');
+  cancelButton.style('top', screenHeight * 0.88 + 'px');
+  cancelButton.style('width', screenWidth * 0.25 + 'px');
+  cancelButton.style('height', screenHeight * 0.06 + 'px');
+  cancelButton.mousePressed(function() { appState = "DEFAULT"; });
   
   saveButton = createButton("Save");
-  saveButton.position(screenWidth - 150, screenHeight - 100);
-  saveButton.size(100, 50);
-  saveButton.mousePressed(function() {
-    appState = "INFO";
-  });
+  saveButton.parent("sketch-container");
+  saveButton.style('position', 'absolute');
+  saveButton.style('right', screenWidth * 0.1 + 'px');
+  saveButton.style('top', screenHeight * 0.88 + 'px');
+  saveButton.style('width', screenWidth * 0.25 + 'px');
+  saveButton.style('height', screenHeight * 0.06 + 'px');
+  saveButton.mousePressed(function() { appState = "INFO"; });
   
   backButton = createButton("Back");
-  backButton.position(20, 60);
-  backButton.size(100, 40);
-  backButton.mousePressed(function() {
-    appState = "DEFAULT";
-  });
+  backButton.parent("sketch-container");
+  backButton.style('position', 'absolute');
+  backButton.style('left', screenWidth * 0.05 + 'px');
+  backButton.style('top', screenHeight * 0.02 + 'px');
+  backButton.style('width', screenWidth * 0.25 + 'px');
+  backButton.style('height', screenHeight * 0.05 + 'px');
+  backButton.mousePressed(function() { appState = "DEFAULT"; });
   
+  submitButton = createButton("Submit");
+  submitButton.parent("sketch-container");
+  submitButton.style('position', 'absolute');
+  submitButton.style('left', '50%');
+  submitButton.style('transform', 'translateX(-50%)');
+  submitButton.style('top', screenHeight * 0.88 + 'px');
+  submitButton.style('width', screenWidth * 0.38 + 'px');
+  submitButton.style('height', screenHeight * 0.06 + 'px');
+  submitButton.mousePressed(handleSubmit);
+  
+  // CREATE INPUTS
   nicknameInput = createInput();
-  nicknameInput.position(20, 260);
-  nicknameInput.size(screenWidth - 40, 30);
+  nicknameInput.parent("sketch-container");
+  nicknameInput.style('position', 'absolute');
+  nicknameInput.style('left', screenWidth * 0.05 + 'px');
+  nicknameInput.style('top', screenHeight * 0.37 + 'px');
+  nicknameInput.style('width', screenWidth * 0.9 + 'px');
   nicknameInput.attribute('placeholder', 'Who are you?');
   
   locationRadio = createRadio();
+  locationRadio.parent("sketch-container");
+  locationRadio.style('position', 'absolute');
+  locationRadio.style('left', screenWidth * 0.05 + 'px');
+  locationRadio.style('top', screenHeight * 0.47 + 'px');
   locationRadio.option('main', 'Library Main');
   locationRadio.option('west', 'Library West');
-  locationRadio.position(20, 340);
   
   descriptionInput = createInput();
-  descriptionInput.position(20, 440);
-  descriptionInput.size(screenWidth - 40, 80);
+  descriptionInput.parent("sketch-container");
+  descriptionInput.style('position', 'absolute');
+  descriptionInput.style('left', screenWidth * 0.05 + 'px');
+  descriptionInput.style('top', screenHeight * 0.59 + 'px');
+  descriptionInput.style('width', screenWidth * 0.9 + 'px');
+  descriptionInput.style('height', '80px');
   descriptionInput.attribute('placeholder', 'Where did you find it?');
-  
-  submitButton = createButton("Submit");
-  submitButton.position(screenWidth / 2 - 75, screenHeight - 100);
-  submitButton.size(150, 50);
-  submitButton.mousePressed(handleSubmit);
 }
 
 // ==========================================
@@ -269,11 +390,9 @@ function handleSubmit() {
     return;
   }
   
-  // Show loading
   submitButton.html("Uploading...");
   submitButton.attribute('disabled', '');
   
-  // Upload to ImgBB and Airtable
   uploadPhoto(nickname, location, description);
 }
 
@@ -282,55 +401,54 @@ function handleSubmit() {
 // ==========================================
 
 function uploadPhoto(nickname, location, description) {
-  // Step 1: Convert image to base64
+  console.log("Starting upload...");
+  
   let canvas = screenshot.canvas;
   let base64Data = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
   
-  // Step 2: Upload to ImgBB
   let formData = new FormData();
   formData.append('image', base64Data);
+  
+  console.log("Uploading to ImgBB...");
   
   fetch('https://api.imgbb.com/1/upload?key=' + imgbbApiKey, {
     method: 'POST',
     body: formData
   })
   .then(function(response) {
+    console.log("ImgBB response status:", response.status);
     return response.json();
   })
   .then(function(data) {
+    console.log("ImgBB response:", data);
+    
     if (data.success) {
       let imageUrl = data.data.url;
       console.log("Image uploaded to ImgBB:", imageUrl);
-      
-      // Step 3: Save to Airtable
       return saveToAirtable(imageUrl, nickname, location, description);
     } else {
+      console.error("ImgBB failed:", data);
       throw new Error("ImgBB upload failed");
     }
   })
   .then(function() {
+    console.log("Successfully saved to Airtable!");
     alert("Photo uploaded successfully!");
     
-    // Clear form
     nicknameInput.value('');
     locationRadio.selected('');
     descriptionInput.value('');
     
-    // Reset button
     submitButton.html("Submit");
     submitButton.removeAttribute('disabled');
     
-    // Reload gallery
     loadGalleryFromAirtable();
-    
-    // Go to archive
     appState = "ARCHIVE";
   })
   .catch(function(error) {
     console.error("Upload error:", error);
-    alert("Failed to upload. Please try again.");
+    alert("Failed to upload: " + error.message);
     
-    // Reset button
     submitButton.html("Submit");
     submitButton.removeAttribute('disabled');
   });
@@ -338,6 +456,8 @@ function uploadPhoto(nickname, location, description) {
 
 function saveToAirtable(imageUrl, nickname, location, description) {
   let url = 'https://api.airtable.com/v0/' + airtableBaseId + '/' + airtableTableName;
+  
+  console.log("Saving to Airtable...");
   
   return fetch(url, {
     method: 'POST',
@@ -357,12 +477,16 @@ function saveToAirtable(imageUrl, nickname, location, description) {
     })
   })
   .then(function(response) {
+    console.log("Airtable response status:", response.status);
     return response.json();
   })
   .then(function(data) {
+    console.log("Airtable response:", data);
+    
     if (data.id) {
-      console.log("Data saved to Airtable:", data);
+      console.log("Data saved to Airtable with ID:", data.id);
     } else {
+      console.error("Airtable save failed:", data);
       throw new Error("Airtable save failed");
     }
   });
@@ -387,7 +511,6 @@ function loadGalleryFromAirtable() {
     if (data.records) {
       console.log("Loaded " + data.records.length + " records from Airtable");
       
-      // Load each image
       let promises = [];
       for (let i = 0; i < data.records.length; i++) {
         let record = data.records[i];
@@ -426,7 +549,7 @@ function loadImageAsync(url, fields) {
       },
       function() {
         console.error("Failed to load image:", url);
-        resolve(); // Don't reject, just skip this image
+        resolve();
       }
     );
   });
@@ -440,7 +563,7 @@ function mousePressed() {
   if (appState === "ARCHIVE" && galleryPhotos.length > 0) {
     let cols = 3;
     let cellSize = screenWidth / cols;
-    let startY = 80;
+    let startY = screenHeight * 0.12;
     
     for (let i = 0; i < galleryPhotos.length; i++) {
       let col = i % cols;
